@@ -1,0 +1,43 @@
+service: pizzaria-service
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: dev
+  region: us-east-1
+
+functions:
+  saveEventToDynamo:
+    handler: handler.save_event_to_dynamo
+    events:
+      - eventBridge:
+          eventBus: pizzaria
+          pattern:
+            source:
+              - com.pizza.status
+
+  processPizzaReadyEvent:
+    handler: handler.process_pizza_ready_event
+    events:
+      - eventBridge:
+          eventBus: pizzaria
+          pattern:
+            detail:
+              status:
+                - pizza pronta
+
+  consumeSQSEvent:
+    handler: handler.consume_sqs_event
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - esperaEntregaQueue
+              - Arn
+          batchSize: 1
+
+resources:
+  Resources:
+    esperaEntregaQueue:
+      Type: AWS::SQS::Queue
+
